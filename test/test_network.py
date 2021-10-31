@@ -494,8 +494,7 @@ def test_add_link_is_directional_if_one_node_is_not_a_note(example):
     # then
     assert network['image:bar.png'] in network['foo'].neighbors
 
-
-def test_rename_note_updates_links_in_other_files(example):
+def test_rekey_topic_updates_links_in_other_files(example):
     # given
     example.make_note('foo')
     example.make_note('bar', """
@@ -505,8 +504,122 @@ def test_rename_note_updates_links_in_other_files(example):
     network = synapse.Network(example.path)
 
     # when
-    network['foo'].rename('baz')
+    network['foo'].rekey('baz')
 
     # then
     assert 'foo' not in network
     network['baz'] in network['bar'].neighbors
+
+def test_rekey_topic_changes_file_on_disk(example):
+    # given
+    example.make_note('foo')
+    network = synapse.Network(example.path)
+
+    # when
+    network['foo'].rekey('baz')
+
+    # then
+    network['baz'].path == example.path / 'baz.md'
+    assert network['baz'].path.exists()
+
+def test_rekey_topic_updates_key(example):
+    # given
+    example.make_note('foo')
+    network = synapse.Network(example.path)
+
+    # when
+    node = network['foo']
+    node.rekey('baz')
+
+    # then
+    assert node.key == 'baz'
+
+def test_rekey_thought_updates_links_in_other_files(example):
+    # given
+    example.make_note('thought:foo')
+    example.make_note('bar', """
+            [[thought:foo]]
+            """)
+
+    network = synapse.Network(example.path)
+
+    # when
+    network['thought:foo'].rekey('thought:baz')
+
+    # then
+    assert 'thought:foo' not in network
+    network['thought:baz'] in network['bar'].neighbors
+
+def test_rekey_thought_changes_file_on_disk(example):
+    # given
+    example.make_note('thought:foo')
+    network = synapse.Network(example.path)
+
+    # when
+    network['thought:foo'].rekey('thought:baz')
+
+    # then
+    network['thought:baz'].path == example.path / 'thought'/ 'baz.md'
+    assert network['thought:baz'].path.exists()
+
+def test_rekey_thought_updates_key(example):
+    # given
+    example.make_note('thought:foo')
+    network = synapse.Network(example.path)
+
+    # when
+    node = network['thought:foo']
+    node.rekey('thought:baz')
+
+    # then
+    assert node.key == 'thought:baz'
+
+def test_rekey_thought_to_topic_is_permitted(example):
+    # given
+    example.make_note('thought:foo')
+    example.make_note('bar', """
+            [[thought:foo]]
+            """)
+
+    network = synapse.Network(example.path)
+
+    # when
+    network['thought:foo'].rekey('baz')
+
+    # then
+    assert 'thought:foo' not in network
+    network['baz'] in network['bar'].neighbors
+
+def test_rekey_a_note_to_be_an_image_raises(example):
+    # given
+    example.make_note('foo')
+    network = synapse.Network(example.path)
+
+    # when
+    with pytest.raises(ValueError):
+        network['foo'].rekey('image:a/b/something.png')
+
+
+def test_rekey_an_image_updates_path_on_disk(example):
+    # given
+    example.make_image('foo.png')
+    network = synapse.Network(example.path)
+
+    # when
+    node = network['image:foo.png']
+    node.rekey('image:a/b/c/bar.png')
+
+    # then
+    assert node.path == example.path / 'image/a/b/c/bar.png'
+    assert node.path.exists()
+
+
+def test_rekey_an_image_to_a_note_raises(example):
+    # given
+    example.make_image('foo.png')
+    network = synapse.Network(example.path)
+
+    # when
+    node = network['image:foo.png']
+    with pytest.raises(ValueError):
+        node.rekey('bar')

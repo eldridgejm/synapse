@@ -225,6 +225,23 @@ class Node:
             if self in note.successors:
                 yield note
 
+    def rekey(self, new_key):
+        key_parts = _get_key_parts(new_key)
+
+        if key_parts.type != self.type:
+            raise ValueError("Cannot change type with rekey.")
+
+        dir = self.network.root / key_parts.type
+
+        for predecessor in self.predecessors:
+            predecessor._update_link(self.key, new_key)
+
+        new_path = (dir / key_parts.name).with_suffix(self.path.suffix)
+        _ensure_directory_exists(new_path)
+        self.path.rename(new_path)
+
+        self.key = new_key
+
 
 def _insert_into_section(lines: List[str], section_name: str, link_text: str):
     header = f'## :{section_name}:'
@@ -236,6 +253,10 @@ def _insert_into_section(lines: List[str], section_name: str, link_text: str):
         lines.append(header)
     lines.insert(ix, link_text)
 
+def _ensure_directory_exists(path):
+    if not path.is_dir():
+        path = path.parent
+    path.mkdir(parents=True, exist_ok=True)
 
 class NoteNode(Node):
 
@@ -268,6 +289,38 @@ class NoteNode(Node):
 
         if (other_node.type in NOTE_TYPES) and (self not in other_node.neighbors):
             other_node.add_link(self)
+
+    def rekey(self, new_key: str):
+        """Rename the note and update links in other files."""
+        key_parts = _get_key_parts(new_key)
+        if key_parts.type == 'topic':
+            dir = self.network.root
+        else:
+            dir = self.network.root / key_parts.type
+
+        if key_parts.type not in NOTE_TYPES:
+            raise ValueError("Cannot re-key a note to be a non-note.")
+
+        for predecessor in self.predecessors:
+            predecessor._update_link(self.key, new_key)
+
+        new_path = (dir / key_parts.name).with_suffix('.md')
+        self.path.rename(new_path)
+
+        self.key = new_key
+
+    def _update_link(self, old_key, new_key):
+        new_contents = self.contents.replace(f'[[{old_key}]]', f'[[{new_key}]]')
+        with self.path.open('w') as fileobj:
+            fileobj.write(new_contents)
+
+def _get_key_parts(k):
+    KeyParts = collections.namedtuple('KeyParts', 'type name')
+    parts = k.split(':')
+    if len(parts) > 1:
+        return KeyParts(*parts)
+    else:
+        return KeyParts('topic', k)
 
 
 def bfs(root: NoteNode, neighbors=None, callback=None):
