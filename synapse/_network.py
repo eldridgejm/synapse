@@ -5,6 +5,7 @@ import re
 from typing import Union, List, Callable
 
 from .exceptions import NetworkKeyError
+from .util import get_key_parts
 
 
 NOTE_TYPES = {'topic', 'project', 'thought', 'journal'}
@@ -292,7 +293,7 @@ class NoteNode(Node):
 
     def rekey(self, new_key: str):
         """Rename the note and update links in other files."""
-        key_parts = _get_key_parts(new_key)
+        key_parts = get_key_parts(new_key)
         if key_parts.type == 'topic':
             dir = self.network.root
         else:
@@ -313,15 +314,6 @@ class NoteNode(Node):
         new_contents = self.contents.replace(f'[[{old_key}]]', f'[[{new_key}]]')
         with self.path.open('w') as fileobj:
             fileobj.write(new_contents)
-
-def _get_key_parts(k):
-    KeyParts = collections.namedtuple('KeyParts', 'type name')
-    parts = k.split(':')
-    if len(parts) > 1:
-        return KeyParts(*parts)
-    else:
-        return KeyParts('topic', k)
-
 
 def bfs(root: NoteNode, neighbors=None, callback=None):
     if neighbors is None:
