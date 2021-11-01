@@ -5,7 +5,7 @@ setup(
     name="synapse",
     version="0.0.0",
     packages=find_packages(),
-    install_requires=["pyyaml"],
+    install_requires=["markdown", "networkx", "matplotlib"],
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
