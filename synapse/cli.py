@@ -1,7 +1,7 @@
 import argparse
 import pathlib
 
-from ._network import Network
+from ._network import Network, NetworkKeyError
 from . import draw
 
 
@@ -22,28 +22,15 @@ def cmd_fix_bidirectional_links(args):
     network.fix_bidirectional_links()
 
 
-def _key_from_path(path, root):
-    path = str(pathlib.Path(path).relative_to(root))
-    parts = path.split('/', 1)
-
-    if len(parts) == 1:
-        kind = 'topic'
-        key = parts[0]
-    else:
-        kind = parts[0]
-        key = kind + ':' + parts[1]
-
-    if kind in {'topic', 'thought', 'journal', 'project'}:
-        key = key[:-3]
-
-    return key
-
-
-def cmd_rename(args):
-    src_key = _key_from_path(args.src, args.workdir)
-    dst_key = _key_from_path(args.dst, args.workdir)
+def cmd_rekey(args):
     network = Network(args.workdir)
-    network[src_key].rekey(dst_key)
+    network[args.src].rekey(args.dst)
+
+
+def cmd_link(args):
+    network = Network(args.workdir)
+    network[args.u].add_link(args.v)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -60,10 +47,15 @@ def main():
     fix_parser = subparsers.add_parser('fix-bidirectional-links')
     fix_parser.set_defaults(cmd=cmd_fix_bidirectional_links)
 
-    rename_parser = subparsers.add_parser('rename')
-    rename_parser.add_argument('src')
-    rename_parser.add_argument('dst')
-    rename_parser.set_defaults(cmd=cmd_rename)
+    rekey_parser = subparsers.add_parser('rekey')
+    rekey_parser.add_argument('src')
+    rekey_parser.add_argument('dst')
+    rekey_parser.set_defaults(cmd=cmd_rekey)
+
+    link_parser = subparsers.add_parser('link')
+    link_parser.add_argument('u')
+    link_parser.add_argument('v')
+    link_parser.set_defaults(cmd=cmd_link)
 
     args = parser.parse_args()
 
