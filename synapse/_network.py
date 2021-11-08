@@ -227,7 +227,7 @@ class Node:
                 yield note
 
     def rekey(self, new_key):
-        key_parts = _get_key_parts(new_key)
+        key_parts = get_key_parts(new_key)
 
         if key_parts.type != self.type:
             raise ValueError("Cannot change type with rekey.")
