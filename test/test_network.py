@@ -100,6 +100,18 @@ def test_allow_files_to_have_slashes_in_key(example):
     assert node.path == example.path / 'file/dir/foo.png'
     assert node.path.exists()
 
+def test_allow_links_to_directories(example):
+    # given
+    example.make_file('dir/foo.png')
+
+    # when
+    network = synapse.Network(example.path)
+    node = network['file:dir']
+
+    # then
+    assert node.path == example.path / 'file/dir'
+    assert node.path.exists()
+
 def test_allow_raw_to_have_slashes_in_key(example):
     # given
     example.make_raw('dir/foo.png')

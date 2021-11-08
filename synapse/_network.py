@@ -208,7 +208,7 @@ class Node:
     @property
     def path(self):
         path = self.network.root / self.key.replace(':', '/')
-        if path.suffix == '':
+        if path.suffix == '' and (self.type in NOTE_TYPES):
             path = path.with_suffix('.md')
         return path
 
