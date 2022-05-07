@@ -191,7 +191,7 @@ def _topics_must_be_connected(network, failures):
         unvisited = all_topics - visited
         for key in unvisited:
             node = Node(network, key)
-            failures.append(_conventional_error_message(node.path, f'Topic "{node}" not connected to "{root.key}"'))
+            failures.append(_conventional_error_message(node.path, f'Not connected to "{root.key}"'))
 
 
 class Node:
