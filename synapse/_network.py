@@ -215,8 +215,11 @@ class Node:
     @property
     def contents(self):
         try:
-            with self.path.open() as fileobj:
-                return fileobj.read()
+            with self.path.open("rb") as fileobj:
+                try:
+                    return fileobj.read().decode()
+                except UnicodeDecodeError:
+                    return fileobj.read().decode("latin1")
         except Exception as exc:
             raise RuntimeError(f'Could not read "{self.key}".') from exc
 
