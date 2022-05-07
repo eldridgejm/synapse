@@ -122,12 +122,16 @@ class FatalFailure(Exception):
     """A failed check that may prevent other checks from running."""
 
 
+def _conventional_error_message(source_file, message):
+    return f"{source_file} -- {message}"
+
+
 @Network.CHECKS.append
 def _all_links_are_existing(network, failures):
     for note in network.notes:
         for key in note.links:
             if key not in network:
-                msg = f'Link to nonexistant "{key}" in "{note.key}"'
+                msg = _conventional_error_message(note.path, f'Link to nonexistant "{key}"')
                 failures.append(msg)
 
     if failures:
@@ -140,9 +144,9 @@ def _links_between_notes_are_bidirectional(network, failures):
         note_neighbors = [n for n in u.neighbors if n.type in NOTE_TYPES]
         for v in note_neighbors:
             if u not in v.neighbors:
-                msg = f'Link from "{u.key}" to "{v.key}" is not bidirectional.'
+                msg = f'There is a link from "{u.key}" to here, but not back.'
+                msg = _conventional_error_message(v.path, msg)
                 failures.append(msg)
-
 
 
 @Network.CHECKS.append
@@ -151,7 +155,7 @@ def _projects_link_to_topics(network, failures):
         linked_topics = [p for p in project.neighbors if p.type == 'topic']
 
         if not linked_topics:
-            failures.append(f'No topics linked in "{project.key}".')
+            failures.append(_conventional_error_message(project.path, f'No topics linked.'))
 
 
 @Network.CHECKS.append
@@ -160,7 +164,7 @@ def _thoughts_link_to_topics_or_projects(network, failures):
         linked = [p for p in thought.neighbors if (p.type == 'topic') or (p.type == 'project')]
 
         if not linked:
-            failures.append(f'No topics or projects linked in "{thought.key}".')
+            failures.append(_conventional_error_message(thought.path, f'No topics or projects linked'))
 
 
 @Network.CHECKS.append
@@ -185,7 +189,9 @@ def _topics_must_be_connected(network, failures):
 
     if len(visited) != len(all_topics):
         unvisited = all_topics - visited
-        failures.append(f'Topic "{unvisited.pop()}" not connected to "{root.key}"')
+        for key in unvisited:
+            node = Node(network, key)
+            failures.append(_conventional_error_message(node.path, f'Topic "{node}" not connected to "{root.key}"'))
 
 
 class Node:

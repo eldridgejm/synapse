@@ -179,7 +179,7 @@ def test_fails_if_link_between_notes_is_not_bidirectional(example):
     failures = network.check()
 
     assert len(failures) == 1
-    assert 'bidirectional' in failures[0]
+    assert 'but not back' in failures[0]
 
 
 def test_fails_if_project_does_not_link_to_topic(example):
